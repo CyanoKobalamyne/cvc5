@@ -19,6 +19,7 @@
 #include "options/smt_options.h"
 #include "proof/proof_checker.h"
 #include "theory/bv/bv_solver_bitblast.h"
+#include "theory/bv/bv_solver_inequality.h"
 #include "theory/bv/bv_solver_bitblast_internal.h"
 #include "theory/bv/theory_bv_rewrite_rules_normalization.h"
 #include "theory/bv/theory_bv_rewrite_rules_simplification.h"
