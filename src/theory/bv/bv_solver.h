@@ -21,6 +21,7 @@
 #define CVC5__THEORY__BV__BV_SOLVER_H
 
 #include "smt/env_obj.h"
+#include "theory/bv/proof_checker.h"
 #include "theory/theory.h"
 
 namespace cvc5::internal {
@@ -44,7 +45,7 @@ class BVSolver : protected EnvObj
 
   virtual void finishInit(){};
 
-  virtual void preRegisterTerm(TNode n) = 0;
+  virtual void preRegisterTerm(TNode n) {}
 
   /**
    * Forwarded from TheoryBV::preCheck().
@@ -110,6 +111,9 @@ class BVSolver : protected EnvObj
    * if they don't have a value yet.
    */
   virtual Node getValue(TNode node, bool initialize) { return Node::null(); }
+
+  /** Get the proof checker of this theory. */
+  virtual BVProofRuleChecker* getProofChecker() { return nullptr; }
 
  protected:
   TheoryState& d_state;
