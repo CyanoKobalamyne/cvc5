@@ -612,6 +612,10 @@ libcvc5_add_sources(
   theory/bv/bv_solver.h
   theory/bv/bv_solver_bitblast.cpp
   theory/bv/bv_solver_bitblast.h
+  theory/bv/bv_inequality_graph.cpp
+  theory/bv/bv_inequality_graph.h
+  theory/bv/bv_solver_inequality.cpp
+  theory/bv/bv_solver_inequality.h
   theory/bv/bv_solver_bitblast_internal.cpp
   theory/bv/bv_solver_bitblast_internal.h
   theory/bv/int_blaster.cpp

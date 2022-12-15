@@ -38,6 +38,7 @@ TheoryBV::TheoryBV(Env& env,
                    std::string name)
     : Theory(THEORY_BV, env, out, valuation, name),
       d_internal(nullptr),
+      d_inequality(nullptr),
       d_rewriter(),
       d_state(env, valuation),
       d_im(env, *this, d_state, "theory::bv::"),
@@ -54,6 +55,7 @@ TheoryBV::TheoryBV(Env& env,
     default:
       AlwaysAssert(options().bv.bvSolver == options::BVSolver::BITBLAST_INTERNAL);
       d_internal.reset(new BVSolverBitblastInternal(d_env, &d_state, d_im));
+      d_inequality.reset(new InequalitySolver(d_env.getContext(), userContext(), this));
   }
   d_theoryState = &d_state;
   d_inferManager = &d_im;
@@ -94,6 +96,7 @@ void TheoryBV::finishInit()
   getValuation().setSemiEvaluatedKind(kind::BITVECTOR_ACKERMANNIZE_UDIV);
   getValuation().setSemiEvaluatedKind(kind::BITVECTOR_ACKERMANNIZE_UREM);
   d_internal->finishInit();
+  
 
   eq::EqualityEngine* ee = getEqualityEngine();
   if (ee)
@@ -137,6 +140,7 @@ void TheoryBV::finishInit()
 void TheoryBV::preRegisterTerm(TNode node)
 {
   d_internal->preRegisterTerm(node);
+  d_inequality->preRegister(node);
 
   eq::EqualityEngine* ee = getEqualityEngine();
   if (ee)
@@ -313,8 +317,12 @@ void TheoryBV::presolve() { d_internal->presolve(); }
 
 EqualityStatus TheoryBV::getEqualityStatus(TNode a, TNode b)
 {
-  EqualityStatus status = d_internal->getEqualityStatus(a, b);
-
+  EqualityStatus status = d_inequality->getEqualityStatus(a, b);
+    if (status != EQUALITY_UNKNOWN) {
+      return status;
+    }
+  status = d_internal->getEqualityStatus(a, b);
+  
   if (status == EqualityStatus::EQUALITY_UNKNOWN)
   {
     Node value_a = getValue(a);

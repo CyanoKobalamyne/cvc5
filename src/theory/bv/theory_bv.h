@@ -20,6 +20,7 @@
 
 #include "theory/bv/theory_bv_rewriter.h"
 #include "theory/theory.h"
+#include "theory/bv/bv_solver_inequality.h"
 #include "theory/theory_eq_notify.h"
 #include "theory/theory_state.h"
 
@@ -102,6 +103,7 @@ class TheoryBV : public Theory
 
   /** Internal BV solver. */
   std::unique_ptr<BVSolver> d_internal;
+  std::unique_ptr<InequalitySolver> d_inequality;
 
   /** The theory rewriter for this theory. */
   TheoryBVRewriter d_rewriter;

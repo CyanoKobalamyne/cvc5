@@ -1,44 +1,18 @@
-/*********************                                                        */
-/*! \file bv_subtheory_inequality.cpp
- ** \verbatim
- ** Top contributors (to current version):
- **   Liana Hadarean, Aina Niemetz, Andrew Reynolds
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Algebraic solver.
- **
- ** Algebraic solver.
- **/
-
-#include "theory/bv/bv_subtheory_inequality.h"
-
-#include "options/smt_options.h"
-#include "smt/smt_statistics_registry.h"
+#include "theory/bv/bv_solver_inequality.h"
+#include "options/bv_options.h"
+#include "prop/sat_solver_factory.h"
 #include "theory/bv/theory_bv.h"
 #include "theory/bv/theory_bv_utils.h"
 #include "theory/theory_model.h"
 
-using namespace std;
-using namespace CVC4;
-using namespace CVC4::context;
-using namespace CVC4::theory;
-using namespace CVC4::theory::bv;
-using namespace CVC4::theory::bv::utils;
+namespace cvc5::internal {
+namespace theory {
+namespace bv {
 
 bool InequalitySolver::check(Theory::Effort e) {
-  Debug("bv-subtheory-inequality") << "InequalitySolveR::check("<< e <<")\n";
-  TimerStat::CodeTimer inequalityTimer(d_statistics.d_solveTime);
-  ++(d_statistics.d_numCallstoCheck);
-  d_bv->spendResource(ResourceManager::Resource::TheoryCheckStep);
-
   bool ok = true;
   while (!done() && ok) {
     TNode fact = get();
-    Debug("bv-subtheory-inequality") << "  "<< fact <<"\n";
     if (fact.getKind() == kind::EQUAL) {
       TNode a = fact[0];
       if( a.getType().isBitVector() ){
@@ -58,13 +32,6 @@ bool InequalitySolver::check(Theory::Effort e) {
       TNode a = fact[0][1];
       TNode b = fact[0][0];
       ok = addInequality(a, b, true, fact);
-      // propagate
-      // NodeManager *nm = NodeManager::currentNM();
-      // if (d_bv->isSharedTerm(a) && d_bv->isSharedTerm(b)) {
-      //   Node neq = nm->mkNode(kind::NOT, nm->mkNode(kind::EQUAL, a, b));
-      //   d_bv->storePropagation(neq, SUB_INEQUALITY);
-      //   d_explanations[neq] = fact;
-      // }
     } else if (fact.getKind() == kind::NOT && fact[0].getKind() == kind::BITVECTOR_ULT) {
       TNode a = fact[0][1];
       TNode b = fact[0][0];
@@ -73,12 +40,6 @@ bool InequalitySolver::check(Theory::Effort e) {
       TNode a = fact[0];
       TNode b = fact[1];
       ok = addInequality(a, b, true, fact);
-      // propagate
-      // if (d_bv->isSharedTerm(a) && d_bv->isSharedTerm(b)) {
-      //   Node neq = nm->mkNode(kind::NOT, nm->mkNode(kind::EQUAL, a, b));
-      //   d_bv->storePropagation(neq, SUB_INEQUALITY);
-      //   d_explanations[neq] = fact;
-      // }
     } else if (fact.getKind() == kind::BITVECTOR_ULE) {
       TNode a = fact[0];
       TNode b = fact[1];
@@ -90,21 +51,9 @@ bool InequalitySolver::check(Theory::Effort e) {
     std::vector<TNode> conflict;
     d_inequalityGraph.getConflict(conflict);
     Node confl = utils::flattenAnd(conflict);
-    d_bv->setConflict(confl);
-    Debug("bv-subtheory-inequality") << "InequalitySolver::conflict:  "<< confl <<"\n";
     return false;
   }
 
-  if (isComplete() && Theory::fullEffort(e)) {
-    // make sure all the disequalities we didn't split on are still satisifed
-    // and split on the ones that are not
-    std::vector<Node> lemmas;
-    d_inequalityGraph.checkDisequalities(lemmas);
-    for(unsigned i = 0; i < lemmas.size(); ++i) {
-      d_bv->lemma(lemmas[i]);
-    }
-  }
-  Debug("bv-subtheory-inequality") << "InequalitySolver done. ";
   return true;
 }
 
@@ -116,8 +65,6 @@ EqualityStatus InequalitySolver::getEqualityStatus(TNode a, TNode b)
   Node a_lt_b = nm->mkNode(kind::BITVECTOR_ULT, a, b);
   Node b_lt_a = nm->mkNode(kind::BITVECTOR_ULT, b, a);
 
-  // if an inequality containing the terms has been asserted then we know
-  // the equality is false
   if (d_assertionSet.contains(a_lt_b) || d_assertionSet.contains(b_lt_a))
   {
     return EQUALITY_FALSE;
@@ -128,9 +75,6 @@ EqualityStatus InequalitySolver::getEqualityStatus(TNode a, TNode b)
   {
     return EQUALITY_UNKNOWN;
   }
-
-  // TODO: check if this disequality is entailed by inequalities via
-  // transitivity
 
   BitVector a_val = d_inequalityGraph.getValueInModel(a);
   BitVector b_val = d_inequalityGraph.getValueInModel(b);
@@ -169,7 +113,6 @@ bool InequalitySolver::isInequalityOnly(TNode node) {
       node.getKind() != kind::SELECT &&
       node.getKind() != kind::STORE &&
       node.getMetaKind() != kind::metakind::VARIABLE) {
-    // not worth caching
     return false;
   }
   bool res = true;
@@ -185,13 +128,11 @@ void InequalitySolver::explain(TNode literal, std::vector<TNode>& assumptions) {
   Assert(d_explanations.find(literal) != d_explanations.end());
   TNode explanation = d_explanations[literal];
   assumptions.push_back(explanation);
-  Debug("bv-inequality-explain") << "InequalitySolver::explain " << literal << " with " << explanation <<"\n";
 }
 
 void InequalitySolver::propagate(Theory::Effort e) { Assert(false); }
 bool InequalitySolver::collectModelInfo(TheoryModel* m, bool fullModel)
 {
-  Debug("bitvector-model") << "InequalitySolver::collectModelInfo \n";
   std::vector<Node> model;
   d_inequalityGraph.getAllValuesInModel(model);
   for (unsigned i = 0; i < model.size(); ++i) {
@@ -206,16 +147,13 @@ bool InequalitySolver::collectModelInfo(TheoryModel* m, bool fullModel)
 
 Node InequalitySolver::getModelValue(TNode var) {
   Assert(isInequalityOnly(var));
-  Debug("bitvector-model") << "InequalitySolver::getModelValue (" << var <<")";
   Assert(isComplete());
   Node result = Node();
   if (!d_inequalityGraph.hasValueInModel(var)) {
-    Assert(d_bv->isSharedTerm(var));
   } else {
     BitVector val = d_inequalityGraph.getValueInModel(var);
     result = utils::mkConst(val);
   }
-  Debug("bitvector-model") << " => " << result <<"\n";
   return result;
 }
 
@@ -233,27 +171,7 @@ bool InequalitySolver::addInequality(TNode a, TNode b, bool strict, TNode fact)
 {
   bool ok = d_inequalityGraph.addInequality(a, b, strict, fact);
   if (!ok || !strict) return ok;
-
-  Node one = utils::mkConst(utils::getSize(a), 1);
-  Node a_plus_one = Rewriter::rewrite(
-      NodeManager::currentNM()->mkNode(kind::BITVECTOR_PLUS, a, one));
-  if (d_ineqTerms.find(a_plus_one) != d_ineqTerms.end())
-  {
-    ok = d_inequalityGraph.addInequality(a_plus_one, b, false, fact);
-  }
   return ok;
 }
 
-InequalitySolver::Statistics::Statistics()
-    : d_numCallstoCheck("theory::bv::inequality::NumCallsToCheck", 0),
-      d_solveTime("theory::bv::inequality::SolveTime")
-{
-  smtStatisticsRegistry()->registerStat(&d_numCallstoCheck);
-  smtStatisticsRegistry()->registerStat(&d_solveTime);
-}
-
-InequalitySolver::Statistics::~Statistics()
-{
-  smtStatisticsRegistry()->unregisterStat(&d_numCallstoCheck);
-  smtStatisticsRegistry()->unregisterStat(&d_solveTime);
-}
+}}}

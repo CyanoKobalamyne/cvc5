@@ -1,23 +1,11 @@
 /*********************                                                        */
-/*! \file bv_inequality_graph.h
- ** \verbatim
- ** Top contributors (to current version):
- **   Liana Hadarean, Mathias Preiner, Tim King
- ** This file is part of the CVC4 project.
- ** Copyright (c) 2009-2020 by the authors listed in the file AUTHORS
- ** in the top-level source directory) and their institutional affiliations.
- ** All rights reserved.  See the file COPYING in the top-level source
- ** directory for licensing information.\endverbatim
- **
- ** \brief Algebraic solver.
- **
- ** Algebraic solver.
+/*inequality subsolver
  **/
 
-#include "cvc4_private.h"
+#include "cvc5_private.h"
 
-#ifndef CVC4__THEORY__BV__BV_INEQUALITY__GRAPH_H
-#define CVC4__THEORY__BV__BV_INEQUALITY__GRAPH_H
+#ifndef CVC5__THEORY__BV__BV_INEQUALITY__GRAPH_H
+#define CVC5__THEORY__BV__BV_INEQUALITY__GRAPH_H
 
 #include <list>
 #include <queue>
@@ -26,10 +14,14 @@
 
 #include "context/cdqueue.h"
 #include "context/context.h"
+#include "context/cdo.h"
+#include "context/cdhashset.h"
 #include "theory/theory.h"
 #include "theory/uf/equality_engine.h"
+#include "util/bitvector.h"
 
-namespace CVC4 {
+
+namespace cvc5::internal {
 namespace theory {
 namespace bv {
 
@@ -102,20 +94,19 @@ class InequalityGraph : public context::ContextNotifyObj{
     }
   }; 
 
-  typedef std::unordered_map<TNode, ReasonId, TNodeHashFunction> ReasonToIdMap;
-  typedef std::unordered_map<TNode, TermId, TNodeHashFunction> TermNodeToIdMap;
+  typedef std::unordered_map<TNode, ReasonId > ReasonToIdMap;
+  typedef std::unordered_map<TNode, TermId > TermNodeToIdMap;
 
   typedef std::vector<InequalityEdge> Edges; 
   typedef std::unordered_set<TermId> TermIdSet;
 
   typedef std::priority_queue<TermId, std::vector<TermId>, QueueComparator> BFSQueue; 
-  typedef std::unordered_set<TNode, TNodeHashFunction> TNodeSet;
-  typedef std::unordered_set<Node, NodeHashFunction> NodeSet;
+  typedef std::unordered_set<TNode > TNodeSet;
+  typedef std::unordered_set<Node > NodeSet;
 
   std::vector<InequalityNode> d_ineqNodes;
   std::vector< Edges > d_ineqEdges;
 
-  // to keep the explanation nodes alive
   NodeSet d_reasonSet; 
   std::vector<TNode> d_reasonNodes;
   ReasonToIdMap d_reasonToIdMap;
@@ -133,14 +124,6 @@ class InequalityGraph : public context::ContextNotifyObj{
   bool hasModelValue(TermId id) const; 
   bool hasReason(TermId id) const; 
   
-  /** 
-   * Registers the term by creating its corresponding InequalityNode
-   * and adding the min <= term <= max default edges. 
-   * 
-   * @param term 
-   * 
-   * @return 
-   */
   TermId registerTerm(TNode term);
   TNode getTermNode(TermId id) const; 
   TermId getTermId(TNode node) const;
@@ -172,42 +155,15 @@ class InequalityGraph : public context::ContextNotifyObj{
   void addEdge(TermId a, TermId b, bool strict, TermId reason);
   
   void setConflict(const std::vector<ReasonId>& conflict);
-  /** 
-   * If necessary update the value in the model of the current queue element. 
-   * 
-   * @param id current queue element we are updating
-   * @param start node we started with, to detect cycles
-   * 
-   * @return 
-   */
-  bool updateValue(TermId id, ModelValue new_mv, TermId start, bool& changed);
-  /** 
-   * Update the current model starting with the start term. 
-   * 
-   * @param queue 
-   * @param start 
-   * 
-   * @return 
-   */
-  bool processQueue(BFSQueue& queue, TermId start);
-  /** 
-   * Return the reasons why from <= to. If from is undefined we just
-   * explain the current value of to. 
-   * 
-   * @param from 
-   * @param to 
-   * @param explanation 
-   */
-  void computeExplanation(TermId from, TermId to, std::vector<ReasonId>& explanation); 
-  //  void splitDisequality(TNode diseq); 
 
-  /**
-     Disequality reasoning
-   */
-  
-  /*** The currently asserted disequalities */
+  bool updateValue(TermId id, ModelValue new_mv, TermId start, bool& changed);
+ 
+  bool processQueue(BFSQueue& queue, TermId start);
+
+  void computeExplanation(TermId from, TermId to, std::vector<ReasonId>& explanation); 
+
   context::CDQueue<TNode> d_disequalities;
-  typedef context::CDHashSet<Node, NodeHashFunction> CDNodeSet;
+  typedef context::CDHashSet<Node > CDNodeSet;
   CDNodeSet d_disequalitiesAlreadySplit; 
   Node makeDiseqSplitLemma(TNode diseq); 
   /** Backtracking mechanisms **/
@@ -232,60 +188,14 @@ public:
       d_undoStack(),
       d_undoStackIndex(c)
   {}
-  /** 
-   * Add a new inequality to the graph 
-   * 
-   * @param a 
-   * @param b 
-   * @param strict 
-   * @param reason 
-   * 
-   * @return 
-   */
+
   bool addInequality(TNode a, TNode b, bool strict, TNode reason);
-  /** 
-   * Add a new disequality to the graph. This may lead in a lemma. 
-   * 
-   * @param a 
-   * @param b 
-   * @param reason 
-   * 
-   * @return 
-   */
   bool addDisequality(TNode a, TNode b, TNode reason); 
   void getConflict(std::vector<TNode>& conflict);
   virtual ~InequalityGraph() {}
-  /** 
-   * Check that the currently asserted disequalities that have not been split on
-   * are still true in the current model. 
-   */
-  void checkDisequalities(std::vector<Node>& lemmas);
-  /** 
-   * Return true if a < b is entailed by the current set of assertions. 
-   * 
-   * @param a 
-   * @param b 
-   * 
-   * @return 
-   */
   bool isLessThan(TNode a, TNode b);
-  /** 
-   * Returns true if the term has a value in the model (i.e. if we have seen it)
-   * 
-   * @param a 
-   * 
-   * @return 
-   */
   bool hasValueInModel(TNode a) const;
-  /** 
-   * Return the value of a in the current model. 
-   * 
-   * @param a 
-   * 
-   * @return 
-   */
   BitVector getValueInModel(TNode a) const;
-
   void getAllValuesInModel(std::vector<Node>& assignments); 
 }; 
 
@@ -293,4 +203,4 @@ public:
 }
 }
 
-#endif /* CVC4__THEORY__BV__BV_INEQUALITY__GRAPH_H */
+#endif /* CVC5__THEORY__BV__BV_INEQUALITY__GRAPH_H */
