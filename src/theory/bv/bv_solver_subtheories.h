@@ -1,3 +1,5 @@
+#include <vector>
+
 #include "cvc5_private.h"
 
 #ifndef CVC5__THEORY__BV__BV_SOLVER_SUBTHEORIES_H
@@ -45,6 +47,9 @@ class BVSolverSubtheories : public BVSolver
  protected:
   /* Bit-blasting solver subclass. */
   std::unique_ptr<BVSolver> d_bitBlastSolver;
+
+  /* Ordered list of (algebraic) subtheory solvers. */
+  std::vector<std::unique_ptr<BVSolver>> d_subSolvers;
 };
 
 }  // namespace bv

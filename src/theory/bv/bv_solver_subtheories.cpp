@@ -36,17 +36,31 @@ bool BVSolverSubtheories::needsEqualityEngine(EeSetupInfo& esi)
 
 void BVSolverSubtheories::postCheck(Theory::Effort level)
 {
+  for (auto&& subSolver : d_subSolvers)
+  {
+    subSolver->postCheck(level);
+  }
   d_bitBlastSolver->postCheck(level);
 }
 
 bool BVSolverSubtheories::preNotifyFact(
     TNode atom, bool pol, TNode fact, bool isPrereg, bool isInternal)
 {
+  for (auto&& subSolver : d_subSolvers)
+  {
+    subSolver->preNotifyFact(atom, pol, fact, isPrereg, isInternal);
+  }
+  // Let bit-blasting solver decide if fact should be asserted to equality
+  // engine.
   return d_bitBlastSolver->preNotifyFact(atom, pol, fact, isPrereg, isInternal);
 }
 
 void BVSolverSubtheories::computeRelevantTerms(std::set<Node>& termSet)
 {
+  for (auto&& subSolver : d_subSolvers)
+  {
+    subSolver->computeRelevantTerms(termSet);
+  }
   d_bitBlastSolver->computeRelevantTerms(termSet);
 }
 
@@ -58,6 +72,15 @@ bool BVSolverSubtheories::collectModelValues(TheoryModel* m,
 
 TrustNode BVSolverSubtheories::explain(TNode n)
 {
+  // Subsolvers that didn't propagate a node will return a null (invalid) node.
+  for (auto&& subSolver : d_subSolvers)
+  {
+    auto&& node = subSolver->explain(n);
+    if (node.getKind() != TrustNodeKind::INVALID)
+    {
+      return node;
+    }
+  }
   return d_bitBlastSolver->explain(n);
 }
 
