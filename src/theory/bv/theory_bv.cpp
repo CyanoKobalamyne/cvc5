@@ -18,9 +18,7 @@
 #include "options/bv_options.h"
 #include "options/smt_options.h"
 #include "proof/proof_checker.h"
-#include "theory/bv/bv_solver_bitblast.h"
-#include "theory/bv/bv_solver_inequality.h"
-#include "theory/bv/bv_solver_bitblast_internal.h"
+#include "theory/bv/bv_solver_subtheories.h"
 #include "theory/bv/theory_bv_rewrite_rules_normalization.h"
 #include "theory/bv/theory_bv_rewrite_rules_simplification.h"
 #include "theory/bv/theory_bv_utils.h"
@@ -46,17 +44,7 @@ TheoryBV::TheoryBV(Env& env,
       d_invalidateModelCache(context(), true),
       d_stats(statisticsRegistry(), "theory::bv::")
 {
-  switch (options().bv.bvSolver)
-  {
-    case options::BVSolver::BITBLAST:
-      d_internal.reset(new BVSolverBitblast(env, &d_state, d_im));
-      break;
-
-    default:
-      AlwaysAssert(options().bv.bvSolver == options::BVSolver::BITBLAST_INTERNAL);
-      d_internal.reset(new BVSolverBitblastInternal(d_env, &d_state, d_im));
-      d_inequality.reset(new InequalitySolver(d_env.getContext(), userContext(), this));
-  }
+  d_internal.reset(new BVSolverSubtheories(env, d_state, d_im));
   d_theoryState = &d_state;
   d_inferManager = &d_im;
 }
@@ -67,12 +55,7 @@ TheoryRewriter* TheoryBV::getTheoryRewriter() { return &d_rewriter; }
 
 ProofRuleChecker* TheoryBV::getProofChecker()
 {
-  if (options().bv.bvSolver == options::BVSolver::BITBLAST_INTERNAL)
-  {
-    return static_cast<BVSolverBitblastInternal*>(d_internal.get())
-        ->getProofChecker();
-  }
-  return nullptr;
+  return d_internal->getProofChecker();
 }
 
 bool TheoryBV::needsEqualityEngine(EeSetupInfo& esi)
@@ -95,6 +78,7 @@ void TheoryBV::finishInit()
   // kind are treated as variables)
   getValuation().setSemiEvaluatedKind(kind::BITVECTOR_ACKERMANNIZE_UDIV);
   getValuation().setSemiEvaluatedKind(kind::BITVECTOR_ACKERMANNIZE_UREM);
+  d_internal->setEqualityEngine(d_equalityEngine);
   d_internal->finishInit();
   
 
@@ -132,8 +116,6 @@ void TheoryBV::finishInit()
     //    ee->addFunctionKind(kind::BITVECTOR_SLE);
     //    ee->addFunctionKind(kind::BITVECTOR_SGT);
     //    ee->addFunctionKind(kind::BITVECTOR_SGE);
-    ee->addFunctionKind(kind::BITVECTOR_TO_NAT);
-    ee->addFunctionKind(kind::INT_TO_BITVECTOR);
   }
 }
 
@@ -195,22 +177,13 @@ void TheoryBV::propagate(Effort e) { return d_internal->propagate(e); }
 Theory::PPAssertStatus TheoryBV::ppAssert(
     TrustNode tin, TrustSubstitutionMap& outSubstitutions)
 {
-  TNode in = tin.getNode();
-  Kind k = in.getKind();
+  Kind k = tin.getNode().getKind();
   if (k == kind::EQUAL)
   {
-    // Substitute variables
-    if (in[0].isVar() && isLegalElimination(in[0], in[1]))
+    auto status = Theory::ppAssert(tin, outSubstitutions);
+    if (status != Theory::PP_ASSERT_STATUS_UNSOLVED)
     {
-      ++d_stats.d_solveSubstitutions;
-      outSubstitutions.addSubstitutionSolved(in[0], in[1], tin);
-      return Theory::PP_ASSERT_STATUS_SOLVED;
-    }
-    if (in[1].isVar() && isLegalElimination(in[1], in[0]))
-    {
-      ++d_stats.d_solveSubstitutions;
-      outSubstitutions.addSubstitutionSolved(in[1], in[0], tin);
-      return Theory::PP_ASSERT_STATUS_SOLVED;
+      return status;
     }
     /**
      * Eliminate extract over bit-vector variables.
@@ -223,10 +196,9 @@ Theory::PPAssertStatus TheoryBV::ppAssert(
      * x = c::sk2       if h == bw(x)-1, where bw(sk2) = l
      * x = sk1::c::sk2  otherwise, where bw(sk1) = bw(x)-1-h and bw(sk2) = l
      */
-    Node node = rewrite(in);
+    Node node = rewrite(tin.getNode());
     if ((node[0].getKind() == kind::BITVECTOR_EXTRACT && node[1].isConst())
-        || (node[1].getKind() == kind::BITVECTOR_EXTRACT
-            && node[0].isConst()))
+        || (node[1].getKind() == kind::BITVECTOR_EXTRACT && node[0].isConst()))
     {
       Node extract = node[0].isConst() ? node[1] : node[0];
       if (extract[0].isVar())
@@ -273,13 +245,6 @@ Theory::PPAssertStatus TheoryBV::ppAssert(
 
 TrustNode TheoryBV::ppRewrite(TNode t, std::vector<SkolemLemma>& lems)
 {
-  // first, see if we need to expand definitions
-  TrustNode texp = d_rewriter.expandDefinition(t);
-  if (!texp.isNull())
-  {
-    return texp;
-  }
-
   Trace("theory-bv-pp-rewrite") << "ppRewrite " << t << "\n";
   Node res = t;
   if (options().bv.bitwiseEq && RewriteRule<BitwiseEq>::applies(t))
@@ -346,10 +311,7 @@ EqualityStatus TheoryBV::getEqualityStatus(TNode a, TNode b)
 
 TrustNode TheoryBV::explain(TNode node) { return d_internal->explain(node); }
 
-void TheoryBV::notifySharedTerm(TNode t)
-{
-  d_internal->notifySharedTerm(t);
-}
+void TheoryBV::notifySharedTerm(TNode t) { d_internal->notifySharedTerm(t); }
 
 void TheoryBV::ppStaticLearn(TNode in, NodeBuilder& learned)
 {

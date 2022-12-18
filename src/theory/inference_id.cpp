@@ -109,6 +109,7 @@ const char* toString(InferenceId i)
     case InferenceId::ARITH_NL_ICP_CONFLICT: return "ARITH_NL_ICP_CONFLICT";
     case InferenceId::ARITH_NL_ICP_PROPAGATION:
       return "ARITH_NL_ICP_PROPAGATION";
+    case InferenceId::FF_LEMMA: return "FF_LEMMA";
 
     case InferenceId::ARRAYS_EXT: return "ARRAYS_EXT";
     case InferenceId::ARRAYS_READ_OVER_WRITE: return "ARRAYS_READ_OVER_WRITE";
@@ -162,6 +163,7 @@ const char* toString(InferenceId i)
     case InferenceId::BV_LAYERED_LEMMA: return "BV_LAYERED_LEMMA";
     case InferenceId::BV_EXTF_LEMMA: return "BV_EXTF_LEMMA";
     case InferenceId::BV_EXTF_COLLAPSE: return "BV_EXTF_COLLAPSE";
+    case InferenceId::BV_EQ_DISJUNCTION_LEMMA: return "BV_EQ_DISJUNCTION_LEMMA";
 
     case InferenceId::DATATYPES_PURIFY: return "DATATYPES_PURIFY";
     case InferenceId::DATATYPES_UNIF: return "DATATYPES_UNIF";

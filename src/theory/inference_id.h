@@ -172,7 +172,13 @@ enum class InferenceId
   ARITH_NL_ICP_CONFLICT,
   // propagation / contraction of variable bounds from icp
   ARITH_NL_ICP_PROPAGATION,
+  //-------------------- ff inference
   // ---------------------------------- end arith theory
+
+  // ---------------------------------- finite field theory
+  // a catch-all, for now
+  FF_LEMMA,
+  // ---------------------------------- end finite field theory
 
   // ---------------------------------- arrays theory
   ARRAYS_EXT,
@@ -228,6 +234,7 @@ enum class InferenceId
   BV_LAYERED_LEMMA,
   BV_EXTF_LEMMA,
   BV_EXTF_COLLAPSE,
+  BV_EQ_DISJUNCTION_LEMMA,
   // ---------------------------------- end bitvector theory
 
   // ---------------------------------- datatypes theory

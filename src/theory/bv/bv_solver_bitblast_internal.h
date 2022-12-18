@@ -46,8 +46,6 @@ class BVSolverBitblastInternal : public BVSolver
 
   bool needsEqualityEngine(EeSetupInfo& esi) override;
 
-  void preRegisterTerm(TNode n) override {}
-
   bool preNotifyFact(TNode atom,
                      bool pol,
                      TNode fact,
@@ -63,8 +61,7 @@ class BVSolverBitblastInternal : public BVSolver
 
   Node getValue(TNode node, bool initialize) override;
 
-  /** get the proof checker of this theory */
-  BVProofRuleChecker* getProofChecker();
+  BVProofRuleChecker* getProofChecker() override;
 
  private:
   /**
