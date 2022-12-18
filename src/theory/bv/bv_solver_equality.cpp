@@ -68,6 +68,8 @@ void BVSolverEquality::postCheck(Theory::Effort level)
   d_im.lemma(utils::mkOr(equalities), InferenceId::BV_EQ_DISJUNCTION_LEMMA);
 }
 
+TrustNode BVSolverEquality::explain(TNode n) { return TrustNode::null(); }
+
 bool BVSolverEquality::collectModelValues(TheoryModel* m,
                                           const std::set<Node>& termSet)
 {

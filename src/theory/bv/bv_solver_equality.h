@@ -21,6 +21,8 @@ class BVSolverEquality : public BVSolver
 
   void postCheck(Theory::Effort level = Theory::Effort::EFFORT_FULL) override;
 
+  TrustNode explain(TNode n) override;
+
   bool collectModelValues(TheoryModel* m,
                           const std::set<Node>& termSet) override;
 
