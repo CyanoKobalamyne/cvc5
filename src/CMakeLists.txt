@@ -1110,6 +1110,9 @@ libcvc5_add_sources(
   theory/strings/infer_proof_cons.h
   theory/strings/inference_manager.cpp
   theory/strings/inference_manager.h
+  theory/strings/model_cons.h
+  theory/strings/model_cons_default.cpp
+  theory/strings/model_cons_default.h
   theory/strings/normal_form.cpp
   theory/strings/normal_form.h
   theory/strings/proof_checker.cpp
@@ -1170,6 +1173,8 @@ libcvc5_add_sources(
   theory/theory_engine_proof_generator.h
   theory/theory_id.cpp
   theory/theory_id.h
+  theory/theory_engine_statistics.cpp
+  theory/theory_engine_statistics.h
   theory/theory_eq_notify.h
   theory/theory_inference.cpp
   theory/theory_inference.h
