@@ -234,6 +234,7 @@ enum class InferenceId
   BV_LAYERED_LEMMA,
   BV_EXTF_LEMMA,
   BV_EXTF_COLLAPSE,
+  BV_EQ_DISJUNCTION_LEMMA,
   // ---------------------------------- end bitvector theory
 
   // ---------------------------------- datatypes theory

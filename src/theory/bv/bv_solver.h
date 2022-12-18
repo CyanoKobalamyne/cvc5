@@ -43,6 +43,8 @@ class BVSolver : protected EnvObj
    */
   virtual bool needsEqualityEngine(EeSetupInfo& esi) { return false; }
 
+  virtual void setEqualityEngine(eq::EqualityEngine* ee) {}
+
   virtual void finishInit(){};
 
   virtual void preRegisterTerm(TNode n) {}

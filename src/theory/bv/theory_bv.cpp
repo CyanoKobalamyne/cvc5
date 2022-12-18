@@ -77,6 +77,7 @@ void TheoryBV::finishInit()
   // kind are treated as variables)
   getValuation().setSemiEvaluatedKind(kind::BITVECTOR_ACKERMANNIZE_UDIV);
   getValuation().setSemiEvaluatedKind(kind::BITVECTOR_ACKERMANNIZE_UREM);
+  d_internal->setEqualityEngine(d_equalityEngine);
   d_internal->finishInit();
 
   eq::EqualityEngine* ee = getEqualityEngine();

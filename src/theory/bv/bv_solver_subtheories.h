@@ -22,6 +22,7 @@ class BVSolverSubtheories : public BVSolver
 
   //--------------------------------- initialization
   bool needsEqualityEngine(EeSetupInfo& esi) override;
+  void setEqualityEngine(eq::EqualityEngine* ee) override;
 
   //--------------------------------- check
   void postCheck(Theory::Effort level = Theory::Effort::EFFORT_FULL) override;

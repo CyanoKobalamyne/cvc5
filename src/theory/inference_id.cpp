@@ -163,6 +163,7 @@ const char* toString(InferenceId i)
     case InferenceId::BV_LAYERED_LEMMA: return "BV_LAYERED_LEMMA";
     case InferenceId::BV_EXTF_LEMMA: return "BV_EXTF_LEMMA";
     case InferenceId::BV_EXTF_COLLAPSE: return "BV_EXTF_COLLAPSE";
+    case InferenceId::BV_EQ_DISJUNCTION_LEMMA: return "BV_EQ_DISJUNCTION_LEMMA";
 
     case InferenceId::DATATYPES_PURIFY: return "DATATYPES_PURIFY";
     case InferenceId::DATATYPES_UNIF: return "DATATYPES_UNIF";
