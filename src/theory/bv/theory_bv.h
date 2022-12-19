@@ -103,7 +103,7 @@ class TheoryBV : public Theory
 
   /** Internal BV solver. */
   std::unique_ptr<BVSolver> d_internal;
-  std::unique_ptr<InequalitySolver> d_inequality;
+  // std::unique_ptr<InequalitySolver> d_inequality;
 
   /** The theory rewriter for this theory. */
   TheoryBVRewriter d_rewriter;

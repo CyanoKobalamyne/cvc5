@@ -6,6 +6,7 @@
 #include "theory/bv/bv_solver_bitblast.h"
 #include "theory/bv/bv_solver_bitblast_internal.h"
 #include "theory/bv/bv_solver_equality.h"
+#include "theory/bv/bv_solver_inequality.h"
 
 namespace cvc5::internal {
 namespace theory {
@@ -36,6 +37,11 @@ BVSolverSubtheories::BVSolverSubtheories(Env& env,
     {
       d_subSolvers.push_back(
           std::make_unique<BVSolverEquality>(d_env, d_state, d_im));
+    }
+    if (options().bv.bvInEqualitySolver)
+    {
+      d_subSolvers.push_back(
+          std::make_unique<BVSolverInEquality>(d_env, d_state, d_im));
     }
   }
 }

@@ -130,3 +130,11 @@ name   = "Bitvector Theory"
   type = "bool"
   default = "false"
   help = "enable the experimental equality solver for bitvectors"
+
+[[option]]
+  name = "bvInEqualitySolver"
+  category = "expert"
+  long = "bv-inequality-solver"
+  type = "bool"
+  default = "false"
+  help = "enable the experimental inequality solver for bitvectors"

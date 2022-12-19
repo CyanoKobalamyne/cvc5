@@ -1,64 +1,61 @@
-/*
- ** Inequality subsolver
- **/
-
-#include "cvc5_private.h"
-
-#ifndef CVC5__THEORY__BV__BV_SUBTHEORY__INEQUALITY_H
-#define CVC5__THEORY__BV__BV_SUBTHEORY__INEQUALITY_H
-
-#include <unordered_set>
-
-#include "context/cdhashset.h"
-#include "expr/attribute.h"
+#ifndef CVC5__THEORY__BV__BV_SOLVER_INEQUALITY_H
+#define CVC5__THEORY__BV__BV_SOLVER_INEQUALITY_H
+#include "theory/bv/bv_solver_inequality.h"
+#include "theory/bv/bv_solver.h"
+#include "theory/uf/equality_engine.h"
 #include "theory/bv/bv_inequality_graph.h"
-#include "theory/bv/bv_subtheory.h"
 
 namespace cvc5::internal {
+
 namespace theory {
 namespace bv {
 
-struct IneqOnlyAttributeId {};
-typedef expr::Attribute<IneqOnlyAttributeId, bool> IneqOnlyAttribute;
-
-struct IneqOnlyComputedAttributeId {};
-typedef expr::Attribute<IneqOnlyComputedAttributeId, bool> IneqOnlyComputedAttribute;
-
-class InequalitySolver : public SubtheorySolver
+class BVSolverInEquality : public BVSolver
 {
-  context::CDHashSet<Node > d_assertionSet;
   InequalityGraph d_inequalityGraph;
-  context::CDHashMap<Node, TNode > d_explanations;
-  context::CDO<bool> d_isComplete;
-  typedef std::unordered_set<Node > NodeSet;
-  NodeSet d_ineqTerms;
-  bool isInequalityOnly(TNode node);
+  std::unordered_set<Node> d_ineqTerms;
+  context::CDO<uint32_t> d_assertionIndex;
+  context::CDQueue<TNode> d_assertionQueue;
+ public:
+  BVSolverInEquality(Env& env,
+                   TheoryState& state,
+                   TheoryInferenceManager& inferMgr):
+    BVSolver(env, state, inferMgr),
+    d_assertionIndex(env.getContext()),
+    d_assertionQueue(env.getContext(), userContext()),
+    d_inequalityGraph(env.getContext(), userContext()),
+    d_ineqTerms()
+    {}
+        
+  ~BVSolverInEquality() = default;
+
+
+  void setEqualityEngine(eq::EqualityEngine* ee) override;
+
+  bool preCheck(Theory::Effort level) override;
+
+  TrustNode explain(TNode n) override;
+
+  bool collectModelValues(TheoryModel* m,
+                          const std::set<Node>& termSet) override;
+
+
   bool addInequality(TNode a, TNode b, bool strict, TNode fact);
-public:
-  InequalitySolver(context::Context* c, context::Context* u, TheoryBV* bv)
-    : SubtheorySolver(c, bv),
-      d_assertionSet(c),
-      d_inequalityGraph(c, u),
-      d_explanations(c),
-      d_isComplete(c, true),
-      d_ineqTerms()
-      {}
-  
+  void preRegisterTerm(TNode node) override;
+  bool done() { return d_assertionQueue.size() == d_assertionIndex; }
+  TNode get() {
+    Assert(!done());
+    TNode res = d_assertionQueue[d_assertionIndex];
+    d_assertionIndex = d_assertionIndex + 1;
+    return res;
+  }
 
-  
-  bool check(Theory::Effort e) override;
-  void propagate(Theory::Effort e) override;
-  void explain(TNode literal, std::vector<TNode>& assumptions) override;
-  bool isComplete() override { return d_isComplete; }
-  bool collectModelInfo(TheoryModel* m, bool fullModel) override;
-  Node getModelValue(TNode var) override;
-  EqualityStatus getEqualityStatus(TNode a, TNode b) override;
-  void assertFact(TNode fact) override;
-  void preRegister(TNode node) override;
-
-
+ private:
+  eq::EqualityEngine* d_ee;
 };
-}
-}}
 
-#endif /* CVC5__THEORY__BV__BV_SUBTHEORY__INEQUALITY_H */
+}  // namespace bv
+}  // namespace theory
+}  // namespace cvc5::internal
+
+#endif /* CVC5__THEORY__BV__BV_SOLVER_INEQUALITY_H */

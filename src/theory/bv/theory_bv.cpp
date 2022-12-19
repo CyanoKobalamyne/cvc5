@@ -36,7 +36,7 @@ TheoryBV::TheoryBV(Env& env,
                    std::string name)
     : Theory(THEORY_BV, env, out, valuation, name),
       d_internal(nullptr),
-      d_inequality(nullptr),
+      // d_inequality(nullptr),
       d_rewriter(),
       d_state(env, valuation),
       d_im(env, *this, d_state, "theory::bv::"),
@@ -122,7 +122,7 @@ void TheoryBV::finishInit()
 void TheoryBV::preRegisterTerm(TNode node)
 {
   d_internal->preRegisterTerm(node);
-  d_inequality->preRegister(node);
+  // d_inequality->preRegister(node);
 
   eq::EqualityEngine* ee = getEqualityEngine();
   if (ee)
@@ -282,11 +282,11 @@ void TheoryBV::presolve() { d_internal->presolve(); }
 
 EqualityStatus TheoryBV::getEqualityStatus(TNode a, TNode b)
 {
-  EqualityStatus status = d_inequality->getEqualityStatus(a, b);
-    if (status != EQUALITY_UNKNOWN) {
-      return status;
-    }
-  status = d_internal->getEqualityStatus(a, b);
+  // EqualityStatus status = d_inequality->getEqualityStatus(a, b);
+  //   if (status != EQUALITY_UNKNOWN) {
+  //     return status;
+  //   }
+  EqualityStatus status = d_internal->getEqualityStatus(a, b);
   
   if (status == EqualityStatus::EQUALITY_UNKNOWN)
   {
