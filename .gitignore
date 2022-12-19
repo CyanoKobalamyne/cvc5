@@ -13,3 +13,5 @@ generated/
 *.swp
 /debug/
 /deps/
+/.cache/
+/test/Testing/Temporary/
