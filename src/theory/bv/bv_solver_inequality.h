@@ -43,12 +43,8 @@ class BVSolverInEquality : public BVSolver
 
   bool addInequality(TNode a, TNode b, bool strict, TNode fact);
   void preRegisterTerm(TNode node) override;
-
-  TNode get()  {
-    TNode res = d_facts[d_factsHead];
-    d_factsHead = d_factsHead + 1;
-    return res;
-  }
+  bool done();
+  TNode get();
 
  private:
   eq::EqualityEngine* d_ee;

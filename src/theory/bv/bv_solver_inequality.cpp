@@ -16,11 +16,17 @@ namespace bv {
 
 
 void BVSolverInEquality::setEqualityEngine(eq::EqualityEngine* ee) { d_ee = ee; }
-
+bool BVSolverInEquality::done(){
+  return d_facts.size()==d_factsHead;
+ }
+TNode BVSolverInEquality::get(){
+    TNode res = d_facts[d_factsHead];
+    d_factsHead = d_factsHead + 1;
+    return res; }
 bool BVSolverInEquality::preCheck(Theory::Effort level)
 {
   bool ok = true;
-  while (ok) {
+  while (!done() && ok) {
     TNode fact = get();
     if (fact.getKind() == kind::EQUAL) {
       TNode a = fact[0];
