@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <unordered_map>
 #include <vector>
-
+#include "theory/theory.h"
 #include "expr/type_node.h"
 #include "theory/bv/theory_bv_utils.h"
 #include "theory/theory_inference_manager.h"
@@ -20,7 +20,7 @@ void BVSolverInEquality::setEqualityEngine(eq::EqualityEngine* ee) { d_ee = ee; 
 bool BVSolverInEquality::preCheck(Theory::Effort level)
 {
   bool ok = true;
-  while (!done() && ok) {
+  while (ok) {
     TNode fact = get();
     if (fact.getKind() == kind::EQUAL) {
       TNode a = fact[0];

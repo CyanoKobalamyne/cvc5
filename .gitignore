@@ -13,4 +13,3 @@ generated/
 *.swp
 /debug/
 /deps/
-/.cache/
