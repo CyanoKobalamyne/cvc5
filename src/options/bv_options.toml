@@ -132,7 +132,7 @@ name   = "Bitvector Theory"
   help = "enable the experimental equality solver for bitvectors"
 
 [[option]]
-  name = "bvInEqualitySolver"
+  name = "bvInequalitySolver"
   category = "expert"
   long = "bv-inequality-solver"
   type = "bool"
